@@ -1,3 +1,7 @@
+## Alchemy University - Week 1 Project
+
+This project is part of the Alchemy University Ethereum Bootcamp. The original instructions for the project can be found below beginning at the "ECDSA Node" section. I created this project to showcase my work.
+
 ## ECDSA Node
 
 This project is an example of using a client and server to facilitate transfers between different addresses. Since there is just a single server on the back-end handling transfers, this is clearly very centralized. We won't worry about distributed consensus for this project.

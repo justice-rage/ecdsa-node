@@ -13,4 +13,4 @@ function getAddress(PublicKey) {
 
 console.log(`Private Key: ${toHex(privateKey)}`);
 console.log(`Public Key: ${toHex(publicKey)}`);
-console.log(`Wallet Address: 0x${toHex(address)}`);
+console.log(`Address: 0x${toHex(address)}`);

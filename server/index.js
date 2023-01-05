@@ -2,45 +2,61 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const port = 3042;
+const secp = require("ethereum-cryptography/secp256k1");
+const {toHex, utf8ToBytes} = require("ethereum-cryptography/utils");
+const {keccak256} = require("ethereum-cryptography/keccak");
 
 app.use(cors());
 app.use(express.json());
 
 const balances = {
-  "0x4c708cd478ee0081ad696e568d5ca42a4f0f2157e4fba3efbc83767385156b37": 100, // justice
-  "0xd548b9af67342d52a532feb5662ffeb1d479ff1c2072fb60a24f451da2942251": 50, // amahla
-  "0xb30ce7b2ac4c98974695197c09f907450d3e20fba81c2b3f8c4877d779e9e643": 75, // miko
+    "0x4717d36ac94067dd722c7c9129f89ddf2f58076e3cf7da18161771d3325ee87f": 100,
+    "0xcff5d9183cc8df11d83d0e205d0998485016c251b261a8c635b8dc50af72db0a": 75,
+    "0x9c27ac0f223616fa705dbdedf7b5524a126273b674441b038e21672823028bf1": 50,
 };
 
 app.get("/balance/:address", (req, res) => {
-  const { address } = req.params;
-  const balance = balances[address] || 0;
-  res.send({ balance });
+    const {address} = req.params;
+    const balance = balances[address] || 0;
+    res.send({balance});
 });
 
 app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
-  // TODO: Get a signature from the client side application
-  // recover the public address from the signature
+    const {sender, recipient, amount, signature, recoveryBit, publicKey} = req.body;
+    console.log("Sender : ", sender);
+    console.log("Recipient : ", recipient);
+    console.log("Amount : ", amount);
+    console.log("Signature : ", signature);
+    console.log("Recovery Bit : ", recoveryBit);
 
-  setInitialBalance(sender);
-  setInitialBalance(recipient);
-
-  if (balances[sender] < amount) {
-    res.status(400).send({ message: "Not enough funds!" });
-  } else {
-    balances[sender] -= amount;
-    balances[recipient] += amount;
-    res.send({ balance: balances[sender] });
-  }
+    let message = {
+        from: sender,
+        to: recipient,
+        amount: amount,
+    };
+    const messageHash = keccak256(utf8ToBytes(JSON.stringify(message)));
+    const recoverKey = secp.recoverPublicKey(messageHash, signature, recoveryBit);
+    setInitialBalance(sender);
+    setInitialBalance(recipient);
+    if (toHex(recoverKey) === publicKey) {
+        if (balances[sender] < amount) {
+            res.status(400).send({message: "Not enough funds in " + sender + " wallet !"});
+        } else {
+            balances[sender] -= amount;
+            balances[recipient] += amount;
+            res.send({balance: balances[sender]});
+        }
+    } else {
+        res.status(400).send({message: "Not the right signature !"});
+    }
 });
 
 app.listen(port, () => {
-  console.log(`Listening on port ${port}!`);
+    console.log(`Listening on port ${port}!`);
 });
 
 function setInitialBalance(address) {
-  if (!balances[address]) {
-    balances[address] = 0;
-  }
+    if (!balances[address]) {
+        balances[address] = 0;
+    }
 }
